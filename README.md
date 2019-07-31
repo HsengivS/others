@@ -1,2 +1,87 @@
-# others
-other files
+from nltk.corpus import wordnet
+from nltk import word_tokenize
+import re
+from cleantext import clean
+from nltk.stem.porter import PorterStemmer
+from nltk.corpus import stopwords 
+from nltk.tokenize import word_tokenize 
+import string
+    
+stop_words = list(set(stopwords.words('english')))
+
+blacklist_stopwords = ['not',"haven't","unable","to","break","down"]
+
+stop_words = [i for i in stop_words if i not in blacklist_stopwords]
+
+porter_stemmer = PorterStemmer()
+
+
+noisy_tokens = ['from','to','sent','rgds','subject','sub','re','mailto','Timestamp','CC','Cc','cc','timestamp']
+stop_lst = noisy_tokens + stop_words +['teammy','hello','helloi','himy','sirmam','hi','team','thanks','regards','dear','ril','vice president','navi mumbai','Vice president','chief','reliance','navi mumbai',
+            'reliance','mumbai','Bombay','bombay','jio','jio','jio infocomm','please',
+            'location','Ext','manager','chembur','Contact no:','phone no','Administrator','administrator','Please','Kindly',
+            'kindly','teampls','teamplease','hii','sir','teamkindly','team','teamrequest','madammy','madamplease',
+            'MadamRequest','Madamplz','plz','teamplz','teampls','hikindly','i','my','sirplease','mam','teami','helloplease','pls','siri','am','hiplease','good','morning']
+
+
+contraction_patterns = [ (r'won\'t', 'will not'), (r'can\'t', 'cannot'), (r'i\'m', 'i am'), (r'ain\'t', 'is not'), (r'(\w+)\'ll', '\g<1> will'), (r'(\w+)n\'t', '\g<1> not'),
+                         (r'(\w+)\'ve', '\g<1> have'), (r'(\w+)\'s', '\g<1> is'), (r'(\w+)\'re', '\g<1> are'), (r'(\w+)\'d', '\g<1> would'), (r'&', 'and'), (r'dammit', 'damn it'), (r'dont', 'do not'), (r'wont', 'will not') ]
+
+def pre_process_1(txt):
+    # replace contractions
+    patterns = [(re.compile(regex), repl) for (regex, repl) in contraction_patterns]
+    for (pattern, repl) in patterns:
+        (txt, count) = re.subn(pattern, repl, txt)
+    txt = re.sub(r"(Sent|sent): \d\d +[A-Za-z]+ +\d\d\d\d +\d\d:\d\d"," TIMESTAMP ",txt)
+    txt = re.sub(r"\d+[.]\d+[.]\d+[.]\d+"," IP_ADDR ",txt)
+    txt = re.sub(r"[[cid:image\d+.png@[A-Z0-9]+.[A-Z0-9]+]"," IMAGE ",txt)
+    txt = re.sub(r"regards+(.*)|Regards+(.*)|regard+(.*)|Warm+\s+Regards+(.*)"," ",txt)
+    txt = re.sub(r"Thank+\s+|Thanks+\s+|thanks+\s+|thanks+\s+"," ",txt)
+    txt = re.sub(r"[^\w\s]+|[^\w\s]"," ", txt)
+    for j in [1,2,3]:
+        for i in txt.split():
+            m = re.findall(r"[a-z][A-Z][a-z]+",i)
+            for j in m:
+                txt = (re.sub(j,j[0]+" "+j[1:],txt))
+    return txt
+
+def pre_procee_2(txt):
+    txt = re.sub(r'<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});'," ",txt)
+    txt = clean(pre_process_1(txt),
+        fix_unicode=True,               # fix various unicode errors
+        to_ascii=True,                  # transliterate to closest ASCII representation
+        lower=True,                     # lowercase text
+        no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
+        no_urls=True,                  # replace all URLs with a special token
+        no_emails=True,                # replace all email addresses with a special token
+        no_phone_numbers=True,         # replace all phone numbers with a special token
+        no_numbers=True,               # replace all numbers with a special token
+        no_digits=False,                # replace all digits with a special token
+        no_currency_symbols=True,      # replace all currency symbols with a special token
+        no_punct=False,                 # fully remove punctuation
+        replace_with_url="URL>",
+        replace_with_email="EMAIL",
+        replace_with_phone_number="PHONE",
+        replace_with_number="NUMBER",
+        replace_with_digit="0",
+        replace_with_currency_symbol="CURR",
+        lang="en"                       # set to 'de' for German special handling
+    )
+    
+#     txt = [porter_stemmer.stem(i) for i in word_tokenize(str(txt).lower())]
+    
+    txt = [i for i in word_tokenize(str(txt).lower()) if i not in stop_lst]
+    txt = [w for w in word_tokenize(str(txt).lower()) if not w in stop_words] 
+    txt = ' '.join(txt)
+#     txt.translate(str.maketrans('', '', string.punctuation))
+    txt = re.sub(r'[^\w\s]','',txt)
+    txt = re.sub(r'_+','',txt)
+    txt = re.sub(r"\s+"," ",txt)
+#     txt = ' '.join(txt)
+    txt = txt.strip()
+    return txt
+
+
+
+
+

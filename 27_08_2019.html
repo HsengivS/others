@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <style>
+    .button {
+background-color: #4CAF50; /* Green */
+border: none;
+color: white;
+padding: 15px 32px;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+margin: 4px 2px;
+cursor: pointer;
+}
+
+.button1 {font-size: 10px;}
+    </style>
+    <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <meta charset="utf-8">
+  </head>
+  <body>
+
+    <p style="margin-bottom: 0;" class="muted">Tight pants next level keffiyeh you probably haven't heard of them. Photo booth beard raw denim letterpress vegan messenger bag stumptown.
+      <br>
+      <textarea name="name" rows="8" cols="80"></textarea>
+
+    </p>
+    <script type="text/javascript">
+    $(function(){
+      // Enables popover
+      $("[data-toggle=popover]").popover();
+    });
+    </script>
+  </body>
+</html>
+
+import flask
+import pickle
+from flask import Flask, render_template, request, jsonify
+from logging_utils import setup_logging_to_file, log_exception
+import logging
+import pandas as pd
+from app_utils import *
+import gc
+
+
+#creating instance of the class
+app=Flask(__name__)
+
+
+@app.route('/')
+def index():
+    print(type(df))
+    return render_template('index1.html')
+
+
+@app.route('/predict', methods = ['POST'])
+def prediction():
+    try:
+        try:
+            content = request.get_json() # REQUESTING THE DATA TO BE IN JSON FORMAT
+            mail = content['text']
+            print(mail)
+        except:
+            mail = request.form.get('sample_text')
+        print(type(df))
+        result  = {'prediction':get_similar_doc_term(mail, df, df['mail_description'], 0.6)}
+        ret_json = {"mail":mail,"result":result, 'status':200}
+        print(ret_json)
+        # result.clear()
+        gc.collect()
+        return jsonify(ret_json)
+    except Exception as e:
+        logging.exception("** AT END POINT /predict **")
+        log_exception(e)
+        ret_json = {"result":'Internal server error', 'status':200}
+        return jsonify(ret_json)
+
+
+if __name__ == '__main__':
+    setup_logging_to_file("logs/predict_engine_flask_api_.log")
+    df = pd.read_csv('updated_utils_cleaned.csv')
+    df.dropna(inplace = True)
+    app.run('0.0.0.0',port=8080,debug = True)#, threaded=True)
+
+
+
+
+
+
+
+
+
+#
+
+
+
+
+
+
+
+<!--
